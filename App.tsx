@@ -4,9 +4,9 @@ import { Message, Role } from './types';
 import ChatMessage from './components/ChatMessage';
 import { SendIcon, RefreshIcon, BotIcon } from './components/Icons';
 
-// Simple utility for generating unique IDs without external dependencies
+// Robust unique ID generator without external dependencies
 const generateId = (prefix: string = 'id') => {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 9)}`;
 };
 
 const App: React.FC = () => {
@@ -20,15 +20,18 @@ const App: React.FC = () => {
   useEffect(() => {
     try {
       initializeChat();
-      // Add initial greeting
-      setMessages([
-        {
-          id: generateId('init'),
-          role: Role.MODEL,
-          text: "Hello! I'm your **AI English Teacher**. 👋\n\n영어로 문장을 입력해주시면 문법을 교정해드리고 영어로 대화도 나눠요! \nLet's start practicing! 🇺🇸🇬🇧",
-          timestamp: new Date(),
-        },
-      ]);
+      // Add initial greeting if no messages exist
+      setMessages((prev) => {
+        if (prev.length > 0) return prev;
+        return [
+          {
+            id: generateId('init'),
+            role: Role.MODEL,
+            text: "Hello! I'm your **AI English Teacher**. 👋\n\n영어로 문장을 입력해주시면 문법을 교정해드리고 영어로 대화도 나눠요! \nLet's start practicing! 🇺🇸🇬🇧",
+            timestamp: new Date(),
+          },
+        ];
+      });
     } catch (error) {
       console.error("Initialization error:", error);
     }
@@ -124,14 +127,20 @@ const App: React.FC = () => {
           );
         });
       });
-    } catch (error) {
-      console.error("Failed to send message", error);
+    } catch (error: any) {
+      console.error("Failed to send message:", error);
+      
+      const errorMessage = error?.message || "Unknown error";
+      const displayError = errorMessage.includes("API_KEY") 
+        ? "API Key configuration error. Please check your environment settings."
+        : "Sorry, I encountered an error. Please try again later. 😥";
+
       setMessages((prev) => [
         ...prev,
         {
           id: generateId('error'),
           role: Role.MODEL,
-          text: "Sorry, I encountered an error. Please try again later. 😥",
+          text: displayError,
           isError: true,
           timestamp: new Date(),
         },

@@ -1,13 +1,21 @@
 import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
 
-// Ensure API Key is available
-const apiKey = process.env.API_KEY;
-
-if (!apiKey) {
-  console.error("API_KEY is missing in process.env");
+// Safe access to process.env.API_KEY
+// In some client-side environments, accessing 'process' directly might throw if not polyfilled.
+let apiKey = '';
+try {
+  if (typeof process !== 'undefined' && process.env) {
+    apiKey = process.env.API_KEY || '';
+  }
+} catch (e) {
+  console.warn("Could not access process.env", e);
 }
 
-const ai = new GoogleGenAI({ apiKey: apiKey || '' });
+if (!apiKey) {
+  console.error("API_KEY is missing. Make sure it is set in your environment variables (e.g., Vercel Project Settings).");
+}
+
+const ai = new GoogleGenAI({ apiKey: apiKey });
 
 const SYSTEM_INSTRUCTION = `
 당신은 영어를 배우는 사용자를 돕는 친절하고 유능한 'AI 영어 문법 선생님'입니다. 
