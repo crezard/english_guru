@@ -1,0 +1,5 @@
+{
+  "name": "English GrammarGuru (영어 문법 챗봇)",
+  "description": "실시간으로 영어 문법을 교정해주고 영어로 대화를 나누는 AI 챗봇입니다.",
+  "requestFramePermissions": []
+}
