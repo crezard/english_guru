@@ -1,11 +1,23 @@
 import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
 
-// Direct access to process.env.API_KEY to allow build tools (Vite/Webpack) to statically replace it.
-// The previous "typeof process" check prevented the bundler from injecting the key if the 'process' global wasn't polyfilled.
-const apiKey = process.env.API_KEY as string;
+// Safely access process.env.API_KEY.
+// This prevents "ReferenceError: process is not defined" in browser environments where the bundler
+// hasn't replaced the variable, preventing the "white screen" crash.
+const getApiKey = (): string => {
+  try {
+    // If the bundler replaces this string, it becomes "YOUR_KEY".
+    // If not, it attempts to access the object.
+    return process.env.API_KEY || "";
+  } catch (e) {
+    // Gracefully handle the case where 'process' is not defined
+    return "";
+  }
+};
+
+const apiKey = getApiKey();
 
 if (!apiKey) {
-  console.error("API_KEY is missing. Make sure it is set in your environment variables and you have redeployed.");
+  console.warn("API_KEY is missing. Chat functionality will likely fail.");
 }
 
 const ai = new GoogleGenAI({ apiKey: apiKey });
@@ -43,6 +55,10 @@ export const sendMessageStream = async (
   message: string,
   onChunk: (text: string) => void
 ): Promise<void> => {
+  if (!apiKey) {
+    throw new Error("API_KEY is missing. Please check your environment variables.");
+  }
+
   if (!chatInstance) {
     initializeChat();
   }

@@ -4,7 +4,7 @@ import { Message, Role } from './types';
 import ChatMessage from './components/ChatMessage';
 import { SendIcon, RefreshIcon, BotIcon } from './components/Icons';
 
-// Robust unique ID generator without external dependencies
+// Robust unique ID generator without external dependencies (uuid)
 const generateId = (prefix: string = 'id') => {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 9)}`;
 };
@@ -131,9 +131,11 @@ const App: React.FC = () => {
       console.error("Failed to send message:", error);
       
       const errorMessage = error?.message || "Unknown error";
-      const displayError = errorMessage.includes("API_KEY") 
-        ? "API Key configuration error. Please check your environment settings."
-        : "Sorry, I encountered an error. Please try again later. 😥";
+      let displayError = "Sorry, I encountered an error. Please try again later. 😥";
+      
+      if (errorMessage.includes("API_KEY")) {
+        displayError = "⚠️ **Configuration Error**: API Key is missing.\n\nPlease check your Vercel Environment Variables (`API_KEY`).";
+      }
 
       setMessages((prev) => [
         ...prev,
