@@ -52,7 +52,7 @@ const App: React.FC = () => {
       initializeChat();
       setMessages([
         {
-          id: Date.now().toString(),
+          id: 'reset-' + Date.now(),
           role: Role.MODEL,
           text: "Conversation reset. What would you like to talk about? ✨",
           timestamp: new Date(),
@@ -73,7 +73,7 @@ const App: React.FC = () => {
 
     // Add user message
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: 'user-' + Date.now(),
       role: Role.USER,
       text: userText,
       timestamp: new Date(),
@@ -84,7 +84,7 @@ const App: React.FC = () => {
 
     try {
       // Placeholder for AI message
-      const aiMessageId = (Date.now() + 1).toString();
+      const aiMessageId = 'ai-' + Date.now();
       setMessages((prev) => [
         ...prev,
         {
@@ -110,7 +110,7 @@ const App: React.FC = () => {
       setMessages((prev) => [
         ...prev,
         {
-          id: Date.now().toString(),
+          id: 'error-' + Date.now(),
           role: Role.MODEL,
           text: "Sorry, I encountered an error. Please try again later. 😥",
           isError: true,
