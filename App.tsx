@@ -4,6 +4,11 @@ import { Message, Role } from './types';
 import ChatMessage from './components/ChatMessage';
 import { SendIcon, RefreshIcon, BotIcon } from './components/Icons';
 
+// Simple utility for generating unique IDs without external dependencies
+const generateId = (prefix: string = 'id') => {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+};
+
 const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -13,16 +18,20 @@ const App: React.FC = () => {
 
   // Initialize chat on mount
   useEffect(() => {
-    initializeChat();
-    // Add initial greeting
-    setMessages([
-      {
-        id: 'init-1',
-        role: Role.MODEL,
-        text: "Hello! I'm your **AI English Teacher**. 👋\n\n영어로 문장을 입력해주시면 문법을 교정해드리고 영어로 대화도 나눠요! \nLet's start practicing! 🇺🇸🇬🇧",
-        timestamp: new Date(),
-      },
-    ]);
+    try {
+      initializeChat();
+      // Add initial greeting
+      setMessages([
+        {
+          id: generateId('init'),
+          role: Role.MODEL,
+          text: "Hello! I'm your **AI English Teacher**. 👋\n\n영어로 문장을 입력해주시면 문법을 교정해드리고 영어로 대화도 나눠요! \nLet's start practicing! 🇺🇸🇬🇧",
+          timestamp: new Date(),
+        },
+      ]);
+    } catch (error) {
+      console.error("Initialization error:", error);
+    }
   }, []);
 
   // Auto-scroll to bottom
@@ -49,16 +58,20 @@ const App: React.FC = () => {
 
   const handleReset = () => {
     if (window.confirm("Start a new conversation? (대화를 초기화하시겠습니까?)")) {
-      initializeChat();
-      setMessages([
-        {
-          id: 'reset-' + Date.now(),
-          role: Role.MODEL,
-          text: "Conversation reset. What would you like to talk about? ✨",
-          timestamp: new Date(),
-        },
-      ]);
-      setInputValue('');
+      try {
+        initializeChat();
+        setMessages([
+          {
+            id: generateId('reset'),
+            role: Role.MODEL,
+            text: "Conversation reset. What would you like to talk about? ✨",
+            timestamp: new Date(),
+          },
+        ]);
+        setInputValue('');
+      } catch (e) {
+        console.error("Reset error:", e);
+      }
     }
   };
 
@@ -73,7 +86,7 @@ const App: React.FC = () => {
 
     // Add user message
     const userMessage: Message = {
-      id: 'user-' + Date.now(),
+      id: generateId('user'),
       role: Role.USER,
       text: userText,
       timestamp: new Date(),
@@ -82,35 +95,41 @@ const App: React.FC = () => {
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
+    // Track if we have created the AI message bubble yet
+    let aiMessageId: string | null = null;
+    let accumulatedText = '';
+
     try {
-      // Placeholder for AI message
-      const aiMessageId = 'ai-' + Date.now();
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: aiMessageId,
-          role: Role.MODEL,
-          text: '',
-          timestamp: new Date(),
-        },
-      ]);
-
-      let accumulatedText = '';
-
       await sendMessageStream(userText, (chunk) => {
         accumulatedText += chunk;
-        setMessages((prev) =>
-          prev.map((msg) =>
+        
+        setMessages((prev) => {
+          // If this is the first chunk, create the AI message
+          if (!aiMessageId) {
+            aiMessageId = generateId('ai');
+            return [
+              ...prev,
+              {
+                id: aiMessageId,
+                role: Role.MODEL,
+                text: accumulatedText,
+                timestamp: new Date(),
+              }
+            ];
+          }
+          
+          // Otherwise, update the existing AI message
+          return prev.map((msg) =>
             msg.id === aiMessageId ? { ...msg, text: accumulatedText } : msg
-          )
-        );
+          );
+        });
       });
     } catch (error) {
       console.error("Failed to send message", error);
       setMessages((prev) => [
         ...prev,
         {
-          id: 'error-' + Date.now(),
+          id: generateId('error'),
           role: Role.MODEL,
           text: "Sorry, I encountered an error. Please try again later. 😥",
           isError: true,
@@ -165,10 +184,14 @@ const App: React.FC = () => {
             <ChatMessage key={msg.id} message={msg} />
           ))}
           
-          {isLoading && messages[messages.length - 1]?.role !== Role.MODEL && (
+          {/* Loading Indicator - only shows if we haven't started streaming the response yet */}
+          {isLoading && messages[messages.length - 1]?.role === Role.USER && (
             <div className="flex justify-start mb-6 w-full animate-pulse">
                <div className="flex items-start gap-3">
-                 <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                 <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center border border-indigo-100">
+                    <BotIcon className="h-6 w-6 text-indigo-600" />
+                 </div>
+                 <div className="bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1">
                     <div className="h-2 w-2 bg-indigo-400 rounded-full animate-bounce delay-75"></div>
                     <div className="h-2 w-2 bg-indigo-400 rounded-full animate-bounce mx-1 delay-150"></div>
                     <div className="h-2 w-2 bg-indigo-400 rounded-full animate-bounce delay-300"></div>
