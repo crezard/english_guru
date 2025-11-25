@@ -1,18 +1,11 @@
 import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
 
-// Safe access to process.env.API_KEY
-// In some client-side environments, accessing 'process' directly might throw if not polyfilled.
-let apiKey = '';
-try {
-  if (typeof process !== 'undefined' && process.env) {
-    apiKey = process.env.API_KEY || '';
-  }
-} catch (e) {
-  console.warn("Could not access process.env", e);
-}
+// Direct access to process.env.API_KEY to allow build tools (Vite/Webpack) to statically replace it.
+// The previous "typeof process" check prevented the bundler from injecting the key if the 'process' global wasn't polyfilled.
+const apiKey = process.env.API_KEY as string;
 
 if (!apiKey) {
-  console.error("API_KEY is missing. Make sure it is set in your environment variables (e.g., Vercel Project Settings).");
+  console.error("API_KEY is missing. Make sure it is set in your environment variables and you have redeployed.");
 }
 
 const ai = new GoogleGenAI({ apiKey: apiKey });
