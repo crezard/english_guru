@@ -133,8 +133,8 @@ const App: React.FC = () => {
       const errorMessage = error?.message || "Unknown error";
       let displayError = "Sorry, I encountered an error. Please try again later. 😥";
       
-      if (errorMessage.includes("API_KEY")) {
-        displayError = "⚠️ **Configuration Error**: API Key is missing.\n\nPlease check your Vercel Environment Variables (`API_KEY`).";
+      if (errorMessage.includes("API_KEY_MISSING") || errorMessage.includes("API key not valid")) {
+        displayError = "⚠️ **Configuration Error**: API Key is missing or invalid.\n\nPlease check your Vercel Environment Variables. Make sure you have set `VITE_VAIT_API_KEY`.";
       }
 
       setMessages((prev) => [

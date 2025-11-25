@@ -1,25 +1,43 @@
 import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
 
-// Safely access process.env.API_KEY.
-// This prevents "ReferenceError: process is not defined" in browser environments where the bundler
-// hasn't replaced the variable, preventing the "white screen" crash.
+// Robustly retrieve API Key from various environment variable patterns.
+// Prioritizes VITE_VAIT_API_KEY as requested by the user.
 const getApiKey = (): string => {
+  // 1. Try Vite standard import.meta.env (for Vite apps)
   try {
-    // If the bundler replaces this string, it becomes "YOUR_KEY".
-    // If not, it attempts to access the object.
-    return process.env.API_KEY || "";
+    // @ts-ignore: import.meta is a valid syntax in standard ES modules
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      // @ts-ignore
+      if (import.meta.env.VITE_VAIT_API_KEY) return import.meta.env.VITE_VAIT_API_KEY;
+      // @ts-ignore
+      if (import.meta.env.API_KEY) return import.meta.env.API_KEY;
+    }
   } catch (e) {
-    // Gracefully handle the case where 'process' is not defined
-    return "";
+    // Ignore errors if import.meta is not supported
   }
+
+  // 2. Try process.env (for Webpack/Node/Classic environments)
+  try {
+    // Explicitly check for VITE_VAIT_API_KEY so bundlers like Webpack/Vite replace it
+    if (typeof process !== 'undefined' && process.env) {
+      if (process.env.VITE_VAIT_API_KEY) return process.env.VITE_VAIT_API_KEY;
+      if (process.env.API_KEY) return process.env.API_KEY;
+    }
+  } catch (e) {
+    // Ignore ReferenceError if process is not defined
+  }
+
+  return "";
 };
 
 const apiKey = getApiKey();
 
 if (!apiKey) {
-  console.warn("API_KEY is missing. Chat functionality will likely fail.");
+  console.warn("API_KEY is missing. Tried VITE_VAIT_API_KEY and API_KEY.");
 }
 
+// Initialize the client only if we have a key, otherwise it might throw or be useless.
+// We allow empty string init but it will fail on request.
 const ai = new GoogleGenAI({ apiKey: apiKey });
 
 const SYSTEM_INSTRUCTION = `
@@ -56,7 +74,7 @@ export const sendMessageStream = async (
   onChunk: (text: string) => void
 ): Promise<void> => {
   if (!apiKey) {
-    throw new Error("API_KEY is missing. Please check your environment variables.");
+    throw new Error("API_KEY_MISSING"); // Specific error code
   }
 
   if (!chatInstance) {
